@@ -1,4 +1,4 @@
-"""One full pipeline run: extract -> silver -> load, recorded in pipeline_runs.
+"""One full pipeline run: extract -> silver -> quality gate -> load, recorded in pipeline_runs.
 
 Run with:  python -m pipeline.run        (needs DATABASE_URL)
 Exit codes: 0 success, 1 pipeline failure, 2 cannot reach the database.
@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import psycopg
 
-from pipeline import extract, load, validate
+from pipeline import extract, load, quality_checks, validate
 
 if TYPE_CHECKING:
     from psycopg import Connection
@@ -30,6 +30,7 @@ def execute(conn: "Connection") -> int:
         rejected = batch.rows_rejected
         if batch.rows_ingested == 0:
             raise RuntimeError("no valid rows to load (every source failed or every row was rejected)")
+        quality_checks.enforce(batch)  # raises QualityCheckError: a bad batch is never loaded
         load.load_batch(conn, batch)
     except Exception as exc:  # every failure must be recorded, whatever its type
         conn.rollback()
