@@ -1,0 +1,69 @@
+name: Ingest
+
+# Hourly pipeline run, plus a manual button (Actions tab -> Ingest -> Run workflow).
+# Minute :07 on purpose: GitHub delays jobs queued exactly on the hour.
+on:
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+    inputs:
+      commit_raw:
+        description: "Also commit this run's raw files to the repo"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write  # lets the daily step push raw files back
+
+# Never run two ingests at once; a late run waits instead of overlapping.
+concurrency:
+  group: ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pipeline
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -m pipeline.run
+
+      # Bronze files are unique to each run's workspace, so only one run a day is
+      # saved: the first one at or after 15:00 UTC (23:00 Manila). Each file already
+      # holds yesterday + today + tomorrow, so a daily snapshot loses nothing important.
+      # Runs even if the pipeline failed: raw data is still worth keeping.
+      - name: Commit raw files (once daily)
+        if: ${{ !cancelled() }}
+        env:
+          FORCE: ${{ inputs.commit_raw }}
+        run: |
+          today=$(date -u +%F)
+          if [ "$FORCE" != "true" ]; then
+            if [ "$(date -u +%-H)" -lt 15 ]; then
+              echo "Before 15:00 UTC; no raw commit this run."; exit 0
+            fi
+            if [ -n "$(git ls-files "data/raw/$today")" ]; then
+              echo "Raw snapshot for $today already committed."; exit 0
+            fi
+          fi
+          git add data/raw
+          if git diff --cached --quiet; then
+            echo "No raw files to commit."; exit 0
+          fi
+          git config user.name "cebu-pulse-bot"
+          git config user.email "cebu-pulse-bot@users.noreply.github.com"
+          git commit -m "chore: raw snapshot $today"
+          git pull --rebase --autostash
+          git push
