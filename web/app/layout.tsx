@@ -8,6 +8,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Cebu Pulse",
   description: "Live weather, air quality and sea conditions across Cebu Province",
+  referrer: "strict-origin-when-cross-origin", // OpenStreetMap tiles require a Referer
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
 
