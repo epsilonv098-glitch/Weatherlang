@@ -15,7 +15,8 @@ export default function ConditionsMap({ locations, mode }: { locations: Loc[]; m
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 18,
       attribution: "&copy; OpenStreetMap contributors",
-    }).addTo(m);
+      referrerPolicy: "strict-origin-when-cross-origin",
+    } as L.TileLayerOptions).addTo(m);
     layer.current = L.layerGroup().addTo(m);
     map.current = m;
     return () => {
