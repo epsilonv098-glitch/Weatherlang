@@ -81,7 +81,7 @@ SOURCES: tuple[Source, ...] = (
         name="marine",
         url="https://marine-api.open-meteo.com/v1/marine",
         hourly=("wave_height", "wave_period"),
-        coastal_only=True,
+        # Fetched for every location. Set coastal_only=True to restrict it to tourist spots.
     ),
 )
 
