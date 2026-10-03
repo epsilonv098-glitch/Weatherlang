@@ -13,7 +13,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ name: s
 
   try {
     const sql = getSql();
-    const [latest, hourly, daily, ranks] = await Promise.all([
+    const [latest, hourly, daily, ranks, beach] = await Promise.all([
       sql`SELECT c.location, c.area_type, c.observed_at, c.temperature_c, c.apparent_temp_c,
                  c.humidity_pct, c.wind_speed_kmh, c.pm2_5, c.us_aqi, c.heat_index_category,
                  r.rain_next_6h_mm, r.rain_level
@@ -32,6 +32,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ name: s
       sql`SELECT location, avg_aqi_24h, avg_apparent_temp_24h_c, total_rain_24h_mm,
                  aqi_rank, heat_rank, rain_rank
           FROM gold_rankings ORDER BY aqi_rank`,
+      sql`SELECT beach_score, verdict, wave_height_m, wave_period_s
+          FROM gold_beach_score WHERE lower(location) = lower(${name})`,
     ]);
 
     if (latest.length === 0) {
@@ -41,6 +43,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ name: s
     return NextResponse.json(
       {
         place: { ...p, rain_next_6h_mm: num(p.rain_next_6h_mm) },
+        beach: beach[0] ?? null,
         hourly: hourly.map((h) => ({
           t: new Date(h.observed_at).getTime(),
           temp: h.temperature_c,
