@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeft, CloudRain, Droplets, Gauge, Thermometer, Wind } from "lucide-react";
+import { ArrowLeft, CloudRain, Droplets, Gauge, Thermometer, Waves, Wind } from "lucide-react";
 import { aqiColor, manilaTime, markerColor, type Loc } from "@/lib/colors";
 import { CompareBars, RainBars, Trend } from "@/components/PlaceCharts";
 
@@ -20,8 +20,10 @@ interface Place {
   rain_next_6h_mm: number | null;
 }
 interface Rank { location: string; aqi: number | null; aqiRank: number; heatRank: number; rainRank: number }
+interface Beach { beach_score: number | null; verdict: string; wave_height_m: number | null; wave_period_s: number | null }
 interface Data {
   place: Place;
+  beach: Beach | null;
   hourly: Record<string, number | null>[];
   daily: { date: string; rain: number | null }[];
   ranks: Rank[];
@@ -79,7 +81,7 @@ export default function PlacePage() {
     );
   }
 
-  const { place: p, hourly, daily, ranks } = data;
+  const { place: p, beach, hourly, daily, ranks } = data;
   const accent = accentFor(p);
   const heatColor = markerColor("heat", { heat_index_category: p.heat_index_category } as Loc);
   const me = ranks.find((r) => r.location === p.location);
@@ -104,7 +106,7 @@ export default function PlacePage() {
         </span>
       </header>
 
-      <section aria-label="Live conditions" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <section aria-label="Live conditions" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat Icon={Thermometer} label="Temperature" value={fmt(p.temperature_c, "°C")} />
         <Stat Icon={Droplets} label="Humidity" value={fmt(p.humidity_pct, "%", 0)} />
         <Stat Icon={Wind} label="Wind" value={fmt(p.wind_speed_kmh, " km/h", 0)} />
@@ -113,6 +115,11 @@ export default function PlacePage() {
         <Stat Icon={Gauge} label="PM2.5" value={fmt(p.pm2_5, " µg/m³")} />
         <Stat Icon={CloudRain} label="Rain, next 6 hours" value={rain === null ? "No data" : `${rain.toFixed(1)} mm`}
           sub={rain !== null && rain < 0.5 ? "Dry" : undefined} color="#22d3ee" />
+        <Stat Icon={Waves} label="Waves" color="#22d3ee"
+          value={beach?.wave_height_m == null ? "No data" : `${beach.wave_height_m.toFixed(1)} m`}
+          sub={beach?.wave_period_s ? `${beach.wave_period_s.toFixed(0)} s apart` : undefined} />
+        <Stat Icon={Waves} label="Beach score" color="#22d3ee"
+          value={beach?.beach_score == null ? "No data" : `${beach.beach_score}/100`} sub={beach?.verdict} />
       </section>
 
       <section aria-label="Last 7 days" className="space-y-3">
