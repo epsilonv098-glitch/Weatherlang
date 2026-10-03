@@ -75,10 +75,10 @@ def test_body_without_hourly_is_rejected() -> None:
         extract.fetch_json(session, "http://x", {})
 
 
-def test_marine_only_for_coastal_locations() -> None:
+def test_marine_is_fetched_for_every_location() -> None:
     metro = extract.extract_location(FakeSession(), METRO, NOW)
     beach = extract.extract_location(FakeSession(), BEACH, NOW)
-    assert set(metro.sources) == {"weather", "air_quality"}
+    assert set(metro.sources) == {"weather", "air_quality", "marine"}
     assert set(beach.sources) == {"weather", "air_quality", "marine"}
     assert metro.ok and beach.ok
 
@@ -103,7 +103,7 @@ def test_save_raw_path_and_content(tmp_path) -> None:
     assert path == tmp_path / "2026-09-29" / "0605_cebu_city.json"
     doc = json.loads(path.read_text(encoding="utf-8"))
     assert doc["location"]["name"] == "Cebu City"
-    assert set(doc["sources"]) == {"weather", "air_quality"}
+    assert set(doc["sources"]) == {"weather", "air_quality", "marine"}
 
 
 def test_save_raw_skips_location_with_no_data(tmp_path) -> None:
