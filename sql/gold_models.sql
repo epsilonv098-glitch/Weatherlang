@@ -125,7 +125,7 @@ LEFT JOIN observations_silver o
       AND o.observed_at <= now() + INTERVAL '6 hours'
 GROUP BY l.id, l.name, l.area_type;
 
--- 6. Beach score (0-100) for tourist spots. Weighted blend of three 0-100 parts:
+-- 6. Beach score (0-100) for every location. Weighted blend of three 0-100 parts:
 --      waves 50%: 100 at <= 0.3 m, falling to 0 at >= 2.0 m
 --      wind  30%: 100 at <= 10 km/h, falling to 0 at >= 40 km/h
 --      rain  20%: 100 at 0 mm, falling to 0 at >= 10 mm expected in the next 6 h
@@ -151,7 +151,6 @@ parts AS (
     LEFT JOIN latest_marine m            ON m.location_id = l.id
     LEFT JOIN gold_latest_conditions c   ON c.location_id = l.id
     LEFT JOIN gold_rain_alert r          ON r.location_id = l.id
-    WHERE l.area_type = 'tourist'
 ),
 scored AS (
     SELECT *, 0.5 * wave_score + 0.3 * wind_score + 0.2 * rain_score AS raw_score
