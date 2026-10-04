@@ -1,6 +1,15 @@
+# Python
 .venv/
 __pycache__/
+*.pyc
 .pytest_cache/
+
+# Secrets (keep the example file)
 .env
+.env.*
+!.env.example
+
+# Web
 node_modules/
 .next/
+.vercel/
